@@ -1,0 +1,193 @@
+\documentclass[14pt, a4paper, oneside, final]{extarticle}
+
+\usepackage{cmap}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english, russian]{babel}
+\usepackage{geometry} 
+\usepackage{graphicx, caption}
+\usepackage{amssymb, amsmath, amsfonts}
+\usepackage{xcolor, hyperref}
+\usepackage{setspace, fullpage, indentfirst}
+\usepackage{listings}
+\usepackage{enumitem}
+\usepackage{csvsimple}
+
+\addto\captionsrussian{\def\refname{СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ}}
+
+\geometry{left=3cm, top=2cm, right=1.5cm, bottom=2cm}
+\geometry{nohead, includefoot}
+\geometry{foot=4mm, footskip=8mm}
+\captionsetup{labelsep=period, justification=centering}
+\setlength{\parindent}{1.27cm}
+\doublespacing
+\emergencystretch=25pt
+
+
+\makeatletter
+\makeatother
+
+% НАЧАЛО ТИТУЛЬНОГО ЛИСТА 
+\begin{document} 
+\setcounter{page}{0}
+\begin{center} 
+\small
+\footnotesize{ФЕДЕРАЛЬНОЕ ГОСУДАРСТВЕННОЕ АВТОНОМНОЕ ОБРАЗОВАТЕЛЬНОЕ}\\
+\footnotesize{УЧРЕЖДЕНИЕ ВЫСШЕГО ОБРАЗОВАНИЯ}\\ 
+\footnotesize{«НАЦИОНАЛЬНЫЙ ИССЛЕДОВАТЕЛЬСКИЙ УНИВЕРСИТЕТ ИТМО»}\\
+\hfill \break 
+\footnotesize{ФАКУЛЬТЕТ ПИИКТ}\\
+\hfill \break
+\hfill \break 
+\hfill \break
+\large{
+    \textbf{Отчет по лабораторной работе №4}
+
+    \textbf{по дисциплине Параллельные вычисления}
+}
+
+\hfill \break 
+\end{center} 
+\begin{flushright} 
+Выполнили студенты\\
+Гуляев Б. С., P42141\\
+Аргынова К. А., P42191\\
+\end{flushright}
+\vspace*{\fill}
+\begin{center}
+Санкт-Петербург
+
+2022
+\end{center}
+\normalsize
+\thispagestyle{empty} 
+\clearpage
+\def\contentsname{ОГЛАВЛЕНИЕ}
+\tableofcontents 
+
+\clearpage
+\section*{ВВЕДЕНИЕ}
+\subsection*{Цель работы}
+Начуиться распараллеливать произвольные алгоритмы сортировки и использовать метод доверительных интервалов.
+\subsection*{Задачи}
+\begin{enumerate}
+ \item Заменить вызовы функции $gettimeofday$ на $omp\_get\_wtime$.
+
+ \item Распараллелить вычисления на этапе Sort, для чего выполнить сортировку в два этапа:
+ \begin{itemize}
+   \item Отсортировать первую и вторую половину массива в двух независимых нитях (можно использовать OpenMP-директиву "parallel sections");
+   \item Объединить отсортированные половины в единый массив.
+  \end{itemize}
+
+ \item Написать функцию, которая один раз в секунду выводит в консоль сообщение о текущем проценте завершения работы программы. Указанную функцию необходимо запустить в отдельном потоке, параллельно работающем с основным вычислительным циклом.
+
+ \item Обеспечить прямую совместимость (forward compatibility) написанной параллельной программы.
+
+ \item Провести эксперименты, варьируя $N$ от $min(N_x/2, N_1)$ до $N_2$, где
+значения $N_1$ и $N_2$ взять из ЛР-1, а $N_x$ – это такое значение $N$, при котором накладные расходы на распараллеливание превышают выигрыш от распараллеливания.
+
+ \item Уменьшить количество итераций основного цикла с 100 до 10 и провести эксперименты, замеряя время выполнения следующими методами:
+ \begin{itemize}
+   \item Использование минимального из десяти полученных замеров;
+   \item Расчёт по десяти измерениям доверительного интервала с уровнем доверия 95\%.
+ \end{itemize}
+
+ Привести графики параллельного ускорения для обоих методов в одной системе координат, при этом нижнюю и верхнюю границу доверительного интервала следует привести двумя независимыми графиками.
+
+ \item В п.3 задания на этапе $Sort$ выполнить параллельную сортировку не двух частей массива, а $k$ частей в $k$ нитях (тредах), где $k$ – это количество процессоров (ядер) в системе, которое становится известным только на этапе выполнения программы с помощью команды $k = omp\_get\_num\_procs()$.
+\end{enumerate}
+
+\textbf{Вариант:} $(6*6*9) \% 47 = 42$ - гиперболический синус с последующим возведением в квадрат, модуль тангенса, возведение в степень, сортировка выбором.
+
+\clearpage
+\section*{СРЕДА ВЫПОЛНЕНИЯ}
+\addcontentsline{toc}{section}{СРЕДА ВЫПОЛНЕНИЯ}
+
+Код собирается следующими компиляторами:
+\begin{itemize}
+ \setlength{\itemindent}{3em}
+ \item GCC 12.2.0
+\end{itemize}
+
+Процессор: AMD Ryzen 5 3550H with Radeon Vega Mobile Gfx
+
+Архитектура: x86\_64
+
+Количество сокетов: 1
+
+Количество ядер: 4
+
+Количество потоков на ядро: 2 (дополнительные потоки выключены при замерах)
+
+Размеры кэшей:
+\begin{itemize}
+ \setlength{\itemindent}{3em}
+ \item L1d: 128 KiB (4 instances)
+ \item L1i: 256 KiB (4 instances)
+ \item L2: 2 MiB (4 instances)
+ \item L3: 4 MiB (1 instance)
+\end{itemize}
+
+ОЗУ: 6 GB, без swap
+
+ОС: Arch Linux (rolling release) Linux version 5.19.10-arch1-1
+
+Разрядность ОС: 64 bit
+
+
+\clearpage
+\section*{ХОД РАБОТЫ}
+\addcontentsline{toc}{section}{ХОД РАБОТЫ}
+Исходный код доступен по ссылке
+
+\url{https://github.com/bgs99/ParallelProcessing}
+
+\clearpage
+
+\section*{Результаты}
+
+Сначала были произведены замеры на интервале $[N_1;N_2]$ для определения  $N_x$.
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/losses.png}
+
+Как видно на графике, накладные расходы превышают выигрыш даже при $N=3310$. Вследствие этого было принято решение использовать $N_1$ из ЛР-1 в качестве начальной точки.
+
+По полученным ранее данным был построен график параллельних ускорений в зависимости от количества потоков для каждого $N$:
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/acceleration.png}
+
+На этом графике так же видно, что при небольшом входном массиве данных выигрыш от параллелизации теряется. Кроме того, на больших наборах данных ожидаемо наибольший выигрыш получается при количестве нитей, соответствующему аппаратному параллелилизму, и при дальнейшем увеличении количества потоков производительность снижается.
+
+Далее были произведены замеры с уменьшенным числом итераций для вычисления доверительного интервала. Их результаты представлены ниже:
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-900.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-3310.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-5720.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-8130.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-10540.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-12950.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-15360.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-17770.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-20180.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-22590.png}
+
+\includegraphics[width=.8\linewidth]{../build/graphs/lab4/time_comparison-25000.png}
+
+По данным графикам можно оценить разброс значений в исходных данных.
+\clearpage
+\section*{ВЫВОД}
+\addcontentsline{toc}{section}{ВЫВОД}
+
+В результате данной работы была проведена этапа сортировки, принесшая значительное ускорение работы программы.
+
+Был использован метод доверительных интервалов для оценки времени выполнения программы.
+\end{document}
